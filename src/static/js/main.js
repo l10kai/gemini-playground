@@ -269,6 +269,7 @@ async function connectToWebsocket() {
     localStorage.setItem('system_instruction', systemInstructionInput.value);
 
     const config = {
+        apiVersion: CONFIG.API.VERSION,
         model: CONFIG.API.MODEL_NAME,
         generationConfig: {
             responseModalities: responseTypeSelect.value,
@@ -288,6 +289,9 @@ async function connectToWebsocket() {
             }],
         }
     };  
+
+    logMessage(`Using API version: ${CONFIG.API.VERSION}`, 'system');
+    logMessage(`Using model: ${CONFIG.API.MODEL_NAME}`, 'system');
 
     try {
         await client.connect(config,apiKeyInput.value);

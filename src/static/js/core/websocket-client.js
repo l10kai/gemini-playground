@@ -20,12 +20,17 @@ export class MultimodalLiveClient extends EventEmitter {
      */
     constructor() {
         super();
-        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        this.baseUrl  = `${wsProtocol}//${window.location.host}/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent`;
+        this.apiVersion = 'v1alpha';
+        this._updateBaseUrl();
         this.ws = null;
         this.config = null;
         this.send = this.send.bind(this);
         this.toolManager = new ToolManager();
+    }
+
+    _updateBaseUrl() {
+        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        this.baseUrl = `${wsProtocol}//${window.location.host}/ws/google.ai.generativelanguage.${this.apiVersion}.GenerativeService.BidiGenerateContent`;
     }
 
     /**
@@ -57,11 +62,18 @@ export class MultimodalLiveClient extends EventEmitter {
      * @throws {ApplicationError} - Throws an error if the connection fails.
      */
     connect(config,apiKey) {
+        // Let callers switch between v1alpha/v1beta websocket RPC namespaces.
+        // IMPORTANT: apiVersion is local-only and must not be sent to Gemini's setup schema.
+        const { apiVersion, ...upstreamConfig } = (config || {});
+        if (apiVersion && apiVersion !== this.apiVersion) {
+            this.apiVersion = apiVersion;
+            this._updateBaseUrl();
+        }
         this.config = {
-            ...config,
+            ...upstreamConfig,
             tools: [
                 ...this.toolManager.getToolDeclarations(),
-                ...(config.tools || [])
+                ...(upstreamConfig.tools || [])
             ]
         };
         const ws = new WebSocket(`${this.baseUrl}?key=${apiKey}`);
